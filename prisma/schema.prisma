@@ -1,0 +1,174 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+type Expense {
+  id             String @map("_id") @db.ObjectId
+  expense_name   String
+  expense_amount Int
+}
+
+type Activity {
+  id         String @map("_id") @db.ObjectId
+  name       String
+  end_time   String
+  start_time String
+}
+
+model Budget {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  event       Event     @relation(fields: [event_id], references: [id])
+  event_id    String    @db.ObjectId
+  title       String
+  max_expense Int
+  createdAt   DateTime  @default(now()) @db.Date
+  updatedAt   DateTime  @updatedAt @db.Date
+  expenses    Expense[]
+}
+
+type FormField {
+  id        String   @map("_id") @db.ObjectId
+  fieldname String
+  options   String[] @default([])
+  type      String
+}
+
+type FormAnswer {
+  id        String   @map("_id") @db.ObjectId
+  fieldname String
+  options   String[] @default([])
+  type      String
+  answer    Json
+}
+
+model Form {
+  id       String      @id @default(auto()) @map("_id") @db.ObjectId
+  event    Event       @relation(fields: [event_id], references: [id])
+  event_id String      @db.ObjectId
+  name     String
+  fields   FormField[]
+  type     String
+}
+
+model Event {
+  id             String        @id @default(auto()) @map("_id") @db.ObjectId
+  user           User          @relation(fields: [user_id], references: [id])
+  user_id        String        @db.ObjectId
+  title          String
+  background     String
+  category       String
+  coordinate     Float[]
+  description    String
+  event_images   String[]      @default([])
+  event_location String
+  price          Int
+  quantity       Int
+  status         Boolean       @default(false)
+  venue          String
+  createdAt      DateTime      @default(now()) @db.Date
+  updatedAt      DateTime      @updatedAt @db.Date
+  itinenaries    Itinenary[]
+  sponsors       Sponsor[]
+  participants   Participant[]
+  budgets        Budget[]
+  forms          Form[]
+  transactions   Transaction[]
+  wishlists      Wishlist[]
+}
+
+model User {
+  id              String        @id @default(auto()) @map("_id") @db.ObjectId
+  username        String        @unique
+  email           String        @unique
+  is_premium      Boolean       @default(false)
+  password        String
+  phone           String        @unique
+  profile_picture String?
+  createdAt       DateTime      @default(now()) @db.Date
+  updatedAt       DateTime      @updatedAt @db.Date
+  events          Event[]
+  participants    Participant[]
+  wishlists       Wishlist[]
+}
+
+enum ParticipantRole {
+  ORGANIZER
+  REGULAR
+  INVITED
+}
+
+enum OrganizerAccess {
+  BUDGET
+  ITINENARY
+  SPONSOR
+  REGISTRATION
+  SURVEY
+}
+
+model Participant {
+  id                   String            @id @default(auto()) @map("_id") @db.ObjectId
+  user                 User              @relation(fields: [user_id], references: [id])
+  user_id              String            @db.ObjectId
+  event                Event             @relation(fields: [event_id], references: [id])
+  event_id             String            @db.ObjectId
+  role                 ParticipantRole   @default(REGULAR)
+  certificate_link     String?
+  survey_answers       FormAnswer[]
+  registration_answers FormAnswer[]
+  access               OrganizerAccess[] @default([])
+  display_name         String
+  presence             Boolean           @default(false)
+  profile_picture      String?
+  referral_points      Int               @default(0)
+  createdAt            DateTime          @default(now()) @db.Date
+  updatedAt            DateTime          @updatedAt @db.Date
+}
+
+model Wishlist {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [user_id], references: [id])
+  user_id   String   @db.ObjectId
+  event     Event    @relation(fields: [event_id], references: [id])
+  event_id  String   @db.ObjectId
+  createdAt DateTime @default(now()) @db.Date
+  updatedAt DateTime @updatedAt @db.Date
+}
+
+model Transaction {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  event          Event    @relation(fields: [event_id], references: [id])
+  event_id       String   @db.ObjectId
+  buyer_name     String
+  payment_method String
+  total          Int
+  status         String
+  createdAt      DateTime @default(now()) @db.Date
+  updatedAt      DateTime @updatedAt @db.Date
+}
+
+model Itinenary {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  event     Event      @relation(fields: [event_id], references: [id])
+  event_id  String     @db.ObjectId
+  day       String
+  createdAt DateTime   @default(now()) @db.Date
+  updatedAt DateTime   @updatedAt @db.Date
+  activity  Activity[]
+}
+
+model Sponsor {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  event       Event    @relation(fields: [event_id], references: [id])
+  event_id    String   @db.ObjectId
+  name        String
+  brand_logo  String
+  contact     String
+  description String
+  createdAt   DateTime @default(now()) @db.Date
+  updatedAt   DateTime @updatedAt @db.Date
+}
