@@ -1,5 +1,5 @@
 import * as bcrypt from "bcrypt";
-import { Injectable, InternalServerErrorException, BadRequestException } from "@nestjs/common";
+import { Injectable, InternalServerErrorException } from "@nestjs/common";
 import { User } from "@prisma/client";
 import { exclude } from "src/_utils/helpers";
 import { PrismaService } from "src/_utils/service/prisma.service";
@@ -48,7 +48,9 @@ export class UserService {
 
   async createNewUser(payload: Omit<CreateUserDto, "password_confirmation">): Promise<Omit<User, "password">> {
     try {
-      const newUser = await this.prisma.user.create({ data: payload });
+      const salt = await bcrypt.genSalt(10);
+      const hashed = bcrypt.hashSync(payload.password, salt);
+      const newUser = await this.prisma.user.create({ data: { ...payload, password: hashed } });
       return exclude(newUser, ["password"]);
     } catch (e: any) {
       console.log(e);

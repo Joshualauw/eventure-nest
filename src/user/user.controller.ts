@@ -11,23 +11,13 @@ import { UserUniquePipe } from "./pipes/UserUniquePipe";
 import { exclude } from "src/_utils/helpers";
 import { ObjectIdPipe } from "src/_utils/pipes/ObjectIdPipe";
 
-@Controller("api")
+@Controller("api/user")
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @Get("user")
+  @Get()
   async findAll(): Promise<ApiResponse> {
     const users = await this.userService.getAllUsers();
-    return {
-      data: users,
-      code: HttpStatus.OK,
-      message: ApiStatus.GET_SUCCESS,
-    };
-  }
-
-  @Get("user/:id")
-  async findOne(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
-    const users = await this.userService.getOneUser(id);
     return {
       data: users,
       code: HttpStatus.OK,
@@ -65,6 +55,16 @@ export class UserController {
       data: newUser,
       code: HttpStatus.CREATED,
       message: "register successful",
+    };
+  }
+
+  @Get(":id")
+  async findOne(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
+    const users = await this.userService.getOneUser(id);
+    return {
+      data: users,
+      code: HttpStatus.OK,
+      message: ApiStatus.GET_SUCCESS,
     };
   }
 }

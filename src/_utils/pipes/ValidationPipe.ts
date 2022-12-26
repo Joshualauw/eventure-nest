@@ -3,10 +3,6 @@ import { ObjectSchema } from "joi";
 import { ApiStatus } from "../constants";
 import { ApiResponse } from "../types/ApiResponse";
 
-function errorBuilder(e: any): string[] {
-  return e.details.map((d: any) => d.message);
-}
-
 @Injectable()
 export class ValidationPipe implements PipeTransform {
   constructor(private schema: ObjectSchema) {}
@@ -21,4 +17,8 @@ export class ValidationPipe implements PipeTransform {
     }
     return validated;
   }
+}
+
+function errorBuilder(e: any): string[] {
+  return e.details.map((d: any) => d.message);
 }
