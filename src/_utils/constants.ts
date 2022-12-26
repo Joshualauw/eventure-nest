@@ -1,4 +1,5 @@
 export const Constant = {
+  PUBLIC_DECORATOR: "isPublic",
   JWT_SECRET: process.env.JWT_SECRET ?? "",
   CLOUDINARY: "Cloudinary",
   CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ?? "joshualauw",

@@ -49,27 +49,64 @@ export class EventService {
     }
   }
 
+  async uploadEventImages(background: string, event_images: string[], event_id: string) {
+    let eventWithImages;
+
+    if (background) {
+      const image_url = await this.cloudinary.singleUpload(background, "event_background", event_id);
+      eventWithImages = await this.prisma.event.update({ where: { id: event_id }, data: { background: image_url } });
+    }
+    if (event_images) {
+      let temp = [] as string[];
+      for (let i = 0; i < event_images.length; i++) {
+        const image_url = await this.cloudinary.singleUpload(event_images[i], "event_images", event_id + "_" + (i + 1));
+        temp.push(image_url);
+      }
+      eventWithImages = await this.prisma.event.update({ where: { id: event_id }, data: { event_images: temp } });
+    }
+
+    return eventWithImages;
+  }
+
+  async setWishlist(id: string, user_id: string) {
+    try {
+      let message = "event added to wishlist";
+      const event = await this.prisma.event.findFirst({ where: { id: id } });
+      if (event) {
+        const wishlist = await this.prisma.wishlist.findFirst({ where: { event_id: id } });
+        if (wishlist) {
+          await this.prisma.wishlist.delete({ where: { id: wishlist.id } });
+          message = "event removed from wishlist";
+        } else {
+          await this.prisma.wishlist.create({ data: { event_id: id, user_id: user_id } });
+        }
+      }
+
+      return { data: event, message };
+    } catch (e: any) {
+      console.log(e);
+      throw new InternalServerErrorException("set wishlist failed");
+    }
+  }
+
+  async updateEvent(payload: CreateEventDto, id: string) {
+    try {
+      let event = await this.prisma.event.update({ where: { id }, data: payload });
+      event = await this.uploadEventImages(payload.background, payload.event_images, event.id);
+
+      return event;
+    } catch (e: any) {
+      console.log(e);
+      throw new InternalServerErrorException(ApiStatus.UPDATE_FAILED);
+    }
+  }
+
   async createEvent(payload: CreateEventDto, user_id: string) {
     try {
       let event = await this.prisma.event.create({ data: { user_id: user_id, ...payload } });
 
       if (event) {
-        if (payload.background) {
-          const image_url = await this.cloudinary.singleUpload(payload.background, "event_background", event.id);
-          event = await this.prisma.event.update({ where: { id: event.id }, data: { background: image_url } });
-        }
-        if (payload.event_images) {
-          let temp = [] as string[];
-          for (let i = 0; i < payload.event_images.length; i++) {
-            const image_url = await this.cloudinary.singleUpload(
-              payload.event_images[i],
-              "event_images",
-              event.id + "_" + (i + 1),
-            );
-            temp.push(image_url);
-          }
-          event = await this.prisma.event.update({ where: { id: event.id }, data: { event_images: temp } });
-        }
+        event = await this.uploadEventImages(payload.background, payload.event_images, event.id);
         await this.prisma.form.create({ data: { event_id: event.id, name: "default", type: "registration" } });
         await this.prisma.form.create({ data: { event_id: event.id, name: "default", type: "survey" } });
       }

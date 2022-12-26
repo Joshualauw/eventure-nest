@@ -46,7 +46,7 @@ export class UserService {
     return errors;
   }
 
-  async createNewUser(payload: Omit<CreateUserDto, "password_confirmation">): Promise<Omit<User, "password">> {
+  async createUser(payload: Omit<CreateUserDto, "password_confirmation">): Promise<Omit<User, "password">> {
     try {
       const salt = await bcrypt.genSalt(10);
       const hashed = bcrypt.hashSync(payload.password, salt);
@@ -54,7 +54,7 @@ export class UserService {
       return exclude(newUser, ["password"]);
     } catch (e: any) {
       console.log(e);
-      throw new InternalServerErrorException(ApiStatus.CREATE_FAILED);
+      throw new InternalServerErrorException("register failed");
     }
   }
 
