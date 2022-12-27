@@ -5,7 +5,7 @@ export interface LoginDto {
   password: string;
 }
 
-export const loginSchema = Joi.object({
+export const loginSchema = Joi.object<LoginDto>({
   email: Joi.string().required().email(),
   password: Joi.string().required().min(6).max(15),
 });

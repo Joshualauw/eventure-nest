@@ -1,4 +1,6 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { InternalServerErrorException, BadRequestException } from "@nestjs/common/exceptions";
+import { Event, Prisma, Wishlist } from "@prisma/client";
 import { ApiStatus } from "src/_utils/constants";
 import { CloudinaryService } from "src/_utils/service/cloudinary/cloudinary.service";
 import { PrismaService } from "src/_utils/service/prisma.service";
@@ -13,7 +15,7 @@ export class EventService {
     private cloudinary: CloudinaryService,
   ) {}
 
-  async getManagedEvents(user_id: string) {
+  async getManagedEvents(user_id: string): Promise<any> {
     try {
       const events = await this.prisma.event.findMany({
         where: { user_id },
@@ -26,12 +28,11 @@ export class EventService {
       });
       return events.map((e) => this.eventResource.transformManagedEvent(e));
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.GET_FAILED);
     }
   }
 
-  async getAttendedEvents(user_id: string) {
+  async getAttendedEvents(user_id: string): Promise<any> {
     try {
       const events = await this.prisma.event.findMany({
         where: { participants: { some: { user_id: user_id } } },
@@ -42,15 +43,15 @@ export class EventService {
           itinenaries: { take: 1, select: { day: true, activity: { select: { start_time: true } } } },
         },
       });
+
       return events.map((e) => this.eventResource.transformHomeEvent(e));
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.GET_FAILED);
     }
   }
 
-  async uploadEventImages(background: string, event_images: string[], event_id: string) {
-    let eventWithImages;
+  async uploadEventImages(background: string, event_images: string[], event_id: string): Promise<Event> {
+    let eventWithImages: any;
 
     if (background) {
       const image_url = await this.cloudinary.singleUpload(background, "event_background", event_id);
@@ -68,7 +69,29 @@ export class EventService {
     return eventWithImages;
   }
 
-  async setWishlist(id: string, user_id: string) {
+  async getWishlistEvents(user_id: string): Promise<any> {
+    try {
+      const events = await this.prisma.event.findMany({
+        where: { wishlists: { some: { user_id } } },
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          price: true,
+          venue: true,
+          background: true,
+          coordinate: true,
+          itinenaries: { take: 1, select: { day: true, activity: { select: { start_time: true } } } },
+        },
+      });
+
+      return events.map((e) => this.eventResource.transformHomeEvent(e));
+    } catch (e: any) {
+      throw new InternalServerErrorException(ApiStatus.GET_FAILED);
+    }
+  }
+
+  async setWishlist(id: string, user_id: string): Promise<{ data: Event; message: string }> {
     try {
       let message = "event added to wishlist";
       const event = await this.prisma.event.findFirst({ where: { id: id } });
@@ -84,24 +107,22 @@ export class EventService {
 
       return { data: event, message };
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException("set wishlist failed");
     }
   }
 
-  async updateEvent(payload: CreateEventDto, id: string) {
+  async updateEvent(payload: CreateEventDto, id: string): Promise<Event> {
     try {
       let event = await this.prisma.event.update({ where: { id }, data: payload });
       event = await this.uploadEventImages(payload.background, payload.event_images, event.id);
 
       return event;
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.UPDATE_FAILED);
     }
   }
 
-  async createEvent(payload: CreateEventDto, user_id: string) {
+  async createEvent(payload: CreateEventDto, user_id: string): Promise<Event> {
     try {
       let event = await this.prisma.event.create({ data: { user_id: user_id, ...payload } });
 
@@ -113,12 +134,11 @@ export class EventService {
 
       return event;
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.CREATE_FAILED);
     }
   }
 
-  async getHomeEvents(query: any) {
+  async getHomeEvents(query: any): Promise<any> {
     try {
       const events = await this.prisma.event.findMany({
         where: query,
@@ -135,12 +155,27 @@ export class EventService {
       });
       return events.map((e) => this.eventResource.transformHomeEvent(e));
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.GET_FAILED);
     }
   }
 
-  async getOneEvent(id: string) {
+  async openEvent(id: string): Promise<any> {
+    try {
+      const forms = await this.prisma.form.findMany({
+        where: { event_id: id, type: "registration" },
+      });
+      if (forms[0].fields.length == 0) {
+        throw new BadRequestException("registration form must be present");
+      }
+      await this.prisma.event.update({ where: { id }, data: { status: true } });
+    } catch (e: any) {
+      throw new InternalServerErrorException("open event failed");
+    }
+  }
+
+  async closeEvent(id: string): Promise<any> {}
+
+  async getOneEvent(id: string): Promise<any> {
     try {
       const event = await this.prisma.event.findFirst({
         where: { id },
@@ -153,9 +188,9 @@ export class EventService {
           itinenaries: { select: { day: true, activity: true } },
         },
       });
+
       return this.eventResource.transformOneEvent(event);
     } catch (e: any) {
-      console.log(e);
       throw new InternalServerErrorException(ApiStatus.GET_FAILED);
     }
   }

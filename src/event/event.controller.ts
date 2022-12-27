@@ -1,6 +1,5 @@
 import { Controller, HttpStatus, UsePipes, HttpCode } from "@nestjs/common";
 import { Param, Put, Body, Req, Post, Query, Get, Patch } from "@nestjs/common/decorators";
-import { User } from "@prisma/client";
 import { ApiStatus } from "src/_utils/constants";
 import { UserReq } from "src/_utils/decorator/user.decorator";
 import { ObjectIdPipe } from "src/_utils/pipes/ObjectIdPipe";
@@ -8,25 +7,14 @@ import { ValidationPipe } from "src/_utils/pipes/ValidationPipe";
 import { ApiResponse } from "src/_utils/types/ApiResponse";
 import { CreateEventDto, createEventSchema } from "./dto/CreateEventDto";
 import { EventService } from "./event.service";
+import { HomeQueryPipe } from "./pipes/HomeQueryPipe";
 
 @Controller("api/event")
 export class EventController {
   constructor(private readonly eventService: EventService) {}
 
   @Get("home")
-  async getHomeEvents(@Query() query): Promise<ApiResponse> {
-    Object.assign(query, { status: true });
-    if (query.category) Object.assign(query, { category: query.category });
-    if (query.title) Object.assign(query, { title: { contains: query.title } });
-    if (query.minPrice && query.maxPrice) {
-      Object.assign(query, {
-        AND: [
-          { price: { gte: parseInt(query.minPrice.toString()) } },
-          { price: { lte: parseInt(query.maxPrice.toString()) } },
-        ],
-      });
-    }
-
+  async getHomeEvents(@Query(HomeQueryPipe) query: any): Promise<ApiResponse> {
     const events = await this.eventService.getHomeEvents(query);
     return {
       data: events,
@@ -46,10 +34,21 @@ export class EventController {
     };
   }
 
+  @Get("wishlist")
+  async getWishlistEvents(@UserReq("id") user_id: string): Promise<ApiResponse> {
+    const events = await this.eventService.getWishlistEvents(user_id);
+
+    return {
+      data: events,
+      code: HttpStatus.OK,
+      message: ApiStatus.GET_SUCCESS,
+    };
+  }
+
   @Post()
   @HttpCode(201)
   @UsePipes(new ValidationPipe(createEventSchema))
-  async createEvent(@UserReq("id") user_id: string, @Body() createEventDto: CreateEventDto) {
+  async createEvent(@UserReq("id") user_id: string, @Body() createEventDto: CreateEventDto): Promise<ApiResponse> {
     const event = await this.eventService.createEvent(createEventDto, user_id);
 
     return {
@@ -61,7 +60,7 @@ export class EventController {
 
   @Put()
   @UsePipes(new ValidationPipe(createEventSchema))
-  async updateEvent(@UserReq("id") user_id: string, @Body() updateEventDto: CreateEventDto) {
+  async updateEvent(@UserReq("id") user_id: string, @Body() updateEventDto: CreateEventDto): Promise<ApiResponse> {
     const event = await this.eventService.createEvent(updateEventDto, user_id);
 
     return {
@@ -71,14 +70,25 @@ export class EventController {
     };
   }
 
-  @Get()
-  async getWishlistEvents(@UserReq("id") user_id: string): Promise<ApiResponse> {
-    const events = await this.eventService.getManagedEvents(user_id);
+  @Put(":id/open")
+  async openEvent(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
+    await this.eventService.openEvent(id);
 
     return {
-      data: events,
       code: HttpStatus.OK,
-      message: ApiStatus.GET_SUCCESS,
+      message: "opened successfuly",
+    };
+  }
+
+  @Put(":id/close")
+  @UsePipes(new ValidationPipe(createEventSchema))
+  async closeEvent(@UserReq("id") user_id: string, @Body() updateEventDto: CreateEventDto): Promise<ApiResponse> {
+    const event = await this.eventService.createEvent(updateEventDto, user_id);
+
+    return {
+      data: event,
+      code: HttpStatus.OK,
+      message: ApiStatus.UPDATE_SUCCESS,
     };
   }
 
