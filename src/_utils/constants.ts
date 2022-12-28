@@ -7,6 +7,19 @@ export const Constant = {
   CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ?? "",
 };
 
+export enum Model {
+  provider_token = "model",
+  ITINENARY = "itinenary",
+  BUDGET = "budget",
+  EVENT = "event",
+  USER = "user",
+  WISHLIST = "wishlist",
+  SPONSOR = "sponsor",
+  PARTICIPANT = "participant",
+  FORM = "form",
+  TRANSACTION = "transaction",
+}
+
 export enum ApiStatus {
   CREATE_FAILED = "failed to create",
   CREATE_SUCCESS = "created successfully",

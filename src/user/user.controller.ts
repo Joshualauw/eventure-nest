@@ -8,10 +8,10 @@ import { LoginDto, loginSchema } from "./dto/LoginDto";
 import { ApiStatus } from "src/_utils/constants";
 import { UserUniquePipe } from "./pipes/UserUniquePipe";
 import { exclude } from "src/_utils/helpers";
-import { ObjectIdPipe } from "src/_utils/pipes/ObjectIdPipe";
 import { Public } from "src/_utils/decorator/public.decorator";
 import { UserReq } from "src/_utils/decorator/user.decorator";
 import { User } from "@prisma/client";
+import { ObjectId } from "src/_utils/decorator/object-id.decorator";
 
 @Controller("api/user")
 export class UserController {
@@ -64,7 +64,7 @@ export class UserController {
 
   @Get(":id")
   @Public()
-  async findOne(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
+  async findOne(@ObjectId("id") id: string): Promise<ApiResponse> {
     const users = await this.userService.getOneUser(id);
     return {
       data: users,

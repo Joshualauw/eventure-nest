@@ -1,8 +1,8 @@
 import { Controller, HttpStatus, UsePipes, HttpCode } from "@nestjs/common";
-import { Param, Put, Body, Req, Post, Query, Get, Patch } from "@nestjs/common/decorators";
+import { Put, Body, Req, Post, Query, Get, Patch } from "@nestjs/common/decorators";
 import { ApiStatus } from "src/_utils/constants";
+import { ObjectId } from "src/_utils/decorator/object-id.decorator";
 import { UserReq } from "src/_utils/decorator/user.decorator";
-import { ObjectIdPipe } from "src/_utils/pipes/ObjectIdPipe";
 import { ValidationPipe } from "src/_utils/pipes/ValidationPipe";
 import { ApiResponse } from "src/_utils/types/ApiResponse";
 import { CreateEventDto, createEventSchema } from "./dto/CreateEventDto";
@@ -48,8 +48,8 @@ export class EventController {
   @Post()
   @HttpCode(201)
   @UsePipes(new ValidationPipe(createEventSchema))
-  async createEvent(@UserReq("id") user_id: string, @Body() createEventDto: CreateEventDto): Promise<ApiResponse> {
-    const event = await this.eventService.createEvent(createEventDto, user_id);
+  async createEvent(@UserReq("id") user_id: string, @Body() body: CreateEventDto): Promise<ApiResponse> {
+    const event = await this.eventService.createEvent(body, user_id);
 
     return {
       data: event,
@@ -60,8 +60,8 @@ export class EventController {
 
   @Put()
   @UsePipes(new ValidationPipe(createEventSchema))
-  async updateEvent(@UserReq("id") user_id: string, @Body() updateEventDto: CreateEventDto): Promise<ApiResponse> {
-    const event = await this.eventService.createEvent(updateEventDto, user_id);
+  async updateEvent(@UserReq("id") user_id: string, @Body() body: CreateEventDto): Promise<ApiResponse> {
+    const event = await this.eventService.createEvent(body, user_id);
 
     return {
       data: event,
@@ -71,7 +71,7 @@ export class EventController {
   }
 
   @Put(":id/open")
-  async openEvent(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
+  async openEvent(@ObjectId("id") id: string): Promise<ApiResponse> {
     await this.eventService.openEvent(id);
 
     return {
@@ -82,8 +82,8 @@ export class EventController {
 
   @Put(":id/close")
   @UsePipes(new ValidationPipe(createEventSchema))
-  async closeEvent(@UserReq("id") user_id: string, @Body() updateEventDto: CreateEventDto): Promise<ApiResponse> {
-    const event = await this.eventService.createEvent(updateEventDto, user_id);
+  async closeEvent(@UserReq("id") user_id: string, @Body() body: CreateEventDto): Promise<ApiResponse> {
+    const event = await this.eventService.createEvent(body, user_id);
 
     return {
       data: event,
@@ -104,7 +104,7 @@ export class EventController {
   }
 
   @Get(":id")
-  async getOneEvent(@Param("id", ObjectIdPipe) id: string): Promise<ApiResponse> {
+  async getOneEvent(@ObjectId("id") id: string): Promise<ApiResponse> {
     const event = await this.eventService.getOneEvent(id);
 
     return {
@@ -115,7 +115,7 @@ export class EventController {
   }
 
   @Patch(":id/wishlist")
-  async setWishlist(@Param("id", ObjectIdPipe) id: string, @UserReq("id") user_id: string): Promise<ApiResponse> {
+  async setWishlist(@ObjectId("id") id: string, @UserReq("id") user_id: string): Promise<ApiResponse> {
     const { message, data: wishlist } = await this.eventService.setWishlist(id, user_id);
 
     return {
