@@ -4,7 +4,7 @@ import { PrismaService } from "../service/prisma.service";
 
 @Injectable()
 export class IsExistPipe implements PipeTransform {
-  constructor(private readonly prisma: PrismaService, @Inject("model") private readonly model: Model) {}
+  constructor(private readonly prisma: PrismaService, @Inject(Model.provider_token) private readonly model: Model) {}
 
   async transform(value: any, metadata: ArgumentMetadata): Promise<boolean> {
     //if id, use default model. If for example: event_id, use event model
